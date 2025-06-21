@@ -87,14 +87,14 @@ class Config:
     APFE_PATH = BASE_PATH / "APFEforPI-main" / "dataset"
     RG_PATH = BASE_PATH / "Sequence-Radius-of-gyration-Rg-data-of-a-copolymer-main"
       # Model parameters (optimized for RTX 3060 6GB)
-    EMBEDDING_DIM = 256  # Reduced from 512
-    HIDDEN_DIM = 128     # Reduced from 256
-    NUM_LAYERS = 3       # Reduced from 4
-    NUM_HEADS = 4        # Reduced from 8
+    EMBEDDING_DIM = 512  # Reduced from 512
+    HIDDEN_DIM = 256     # Reduced from 256
+    NUM_LAYERS = 4       # Reduced from 4
+    NUM_HEADS = 8        # Reduced from 8
     DROPOUT = 0.1
     
     # Training parameters (memory optimized)
-    BATCH_SIZE = 16      # Reduced from 32
+    BATCH_SIZE = 34      # Reduced from 32
     LEARNING_RATE = 1e-4
     NUM_EPOCHS = 100
     PATIENCE = 10
@@ -488,13 +488,15 @@ class MolecularFeaturizer:
                 return np.zeros(self._get_feature_dim())
             
             features = []
-            if 'morgan' in self.feature_types:
+            if 'morgan' in self.feature_types:                
                 try:
                     # Morgan fingerprints (1024 bits - reduced for memory)
                     fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2, nBits=1024)
                     features.extend([int(x) for x in fp.ToBitString()])
                 except Exception:
-                    features.extend([0] * 1024)  # Use zeros if fingerprint calculation fails            if 'descriptors' in self.feature_types:
+                    features.extend([0] * 1024)  # Use zeros if fingerprint calculation fails
+            
+            if 'descriptors' in self.feature_types:
                 # Molecular descriptors - using correct RDKit API
                 try:
                     desc_features = [
@@ -777,9 +779,8 @@ class SelfSupervisedTrainer:
                 self.optimizer.zero_grad()
                   # Forward pass
                 property_outputs, _ = self.model(features)
-                
-                # Calculate losses for each property
-                total_loss = 0
+                  # Calculate losses for each property
+                total_loss = torch.tensor(0.0, device=self.device, requires_grad=True)
                 for i, prop in enumerate(self.config.TARGET_PROPERTIES):
                     if not torch.isnan(targets[:, i]).all():  # Skip if all NaN
                         mask = ~torch.isnan(targets[:, i])
@@ -788,13 +789,14 @@ class SelfSupervisedTrainer:
                                 property_outputs[prop][mask].squeeze(), 
                                 targets[mask, i]
                             )
-                            total_loss += prop_loss
+                            total_loss = total_loss + prop_loss
                             train_losses[prop].append(prop_loss.item())
                 
                 train_losses['total'].append(total_loss.item())
                 
                 # Backward pass
-                total_loss.backward()
+                if total_loss.item() > 0:  # Only backward if there's actual loss
+                    total_loss.backward()
                 self.optimizer.step()
             
             # Validation phase
@@ -836,10 +838,9 @@ class SelfSupervisedTrainer:
             for features, targets in val_loader:
                 features = features.to(self.device)
                 targets = targets.to(self.device)
-                
                 property_outputs, _ = self.model(features)
                 
-                batch_loss = 0
+                batch_loss = torch.tensor(0.0, device=self.device)
                 for i, prop in enumerate(self.config.TARGET_PROPERTIES):
                     if not torch.isnan(targets[:, i]).all():
                         mask = ~torch.isnan(targets[:, i])
@@ -848,7 +849,7 @@ class SelfSupervisedTrainer:
                                 property_outputs[prop][mask].squeeze(), 
                                 targets[mask, i]
                             )
-                            batch_loss += prop_loss
+                            batch_loss = batch_loss + prop_loss
                 
                 total_loss += batch_loss.item()
                 num_batches += 1
