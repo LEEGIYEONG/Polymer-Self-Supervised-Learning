@@ -1,0 +1,65 @@
+Open Polymer Datasets To Explore For Pre-training & Self-Supervised Learning
+Deep Research Report — Open‑Source Polymer Datasets for Machine‑Learning
+Polymer ML is often bottlenecked not by algorithms but by data that are both large and truly open. The gold‑standard experimental database, PoLyInfo (https://polymer.nims.go.jp/en/), is legally “look‑but‑don’t‑download.” To fill the gap, researchers have released huge synthetic datasets such as PI1M (https://github.com/RUIMINMA1996/PI1M). The practical takeaway is a trade‑off:
+
+Fidelity ⇄ Accessibility
+High‑quality lab data exist but cannot be bulk‑downloaded; large open datasets exist but are computer‑generated.
+
+A winning ML strategy therefore mixes both: pre‑train on a giant open set, then fine‑tune on the smaller, high‑quality competition data.
+
+2. Three kinds of polymer data (and their pros/cons)
+Paradigm	Example link	Strength	Limitation
+Experimental	PoLyInfo (https://polymer.nims.go.jp/en/)	Real measurements; >100 properties	No bulk download; restricted use
+Computational	RadonPy MD pipeline (https://pypi.org/project/radonpy/)	Consistent, high‑fidelity simulation data	Super‑computer time limits size
+Generative	PI1M (https://github.com/RUIMINMA1996/PI1M)	~1 M structures, MIT‑licensed	Properties partly synthetic; not all realistic
+3. Datasets you can download today
+Role	Dataset (link)	What you get	License
+Competition baseline	Open Polymer Prediction 2025 (https://www.kaggle.com/competitions/neurips-open-polymer-prediction-2025)	5 MD‑derived labels (Tg, Tc, Density, FFV, Rg)	Kaggle rules
+Pre‑training powerhouse	PI1M (https://github.com/RUIMINMA1996/PI1M)	~1 M p‑SMILES; labels for SA score in v2	MIT
+Benchmark protocol	POINT² (https://arxiv.org/abs/2503.23491)	Curated splits + evaluation code	CC‑BY‑4.0
+Fill the label gaps	Thermal‑conductivity set (https://github.com/SJTU-MI/APFEforPI) • FFV set (https://github.com/figotj/Fractional-free-volume-of-polymer-membranes) • Rg set (https://github.com/patra-group/Sequence-Radius-of-gyration-Rg-data-of-a-copolymer)	Tc & Density • FFV • Rg	BSD‑2 • none* • none*
+Synthetically aware	OMG (https://github.com/TheJacksonLab/OpenMacromolecularGenome)	SMILES + Log P, 17 reaction templates	CC‑BY‑NC‑ND (check prize‑eligibility)
+*No stated license; assume research‑only use and cite the authors.
+
+4. Recommended workflow (concise roadmap)
+Representation pre‑training
+Train a Graph NN or Transformer on the ~1 M p‑SMILES in PI1M.
+Self‑supervised tasks (mask‑prediction, contrastive learning) teach the model polymer “language.”
+
+Property multi‑task fine‑tuning
+Fine‑tune the shared encoder on Kaggle’s 5 labels using a multi‑head network.
+Use the small GitHub datasets to balance tasks that PI1M lacks (Tc, FFV, Rg).
+
+Add synthetic‑feasibility signals
+Weight or filter PI1M samples by the built‑in SA score.
+Optionally mine OMG’s reaction templates to remove impossible chemistries.
+
+Validate with POINT²
+Run the POINT² protocol to benchmark accuracy, uncertainty, and interpretability against literature standards.
+
+5. Pros‑and‑cons summary
+Move	Upside	Trade‑off
+PI1M pre‑training	Massive chemical coverage; MIT license	Labels only for Tg & Density; synthetic data noise
+Multi‑task learning	Shares information across correlated properties	Hyper‑parameter tuning more complex
+SA‑score weighting	Focuses on lab‑buildable polymers	Risk of discarding true high‑performance outliers
+RadonPy augmentation	Can simulate missing labels	Requires huge CPU/GPU hours
+6. Bottom line
+Start with PI1M, patch the gaps with the small GitHub label sets, and fine‑tune on the competition CSV.
+This leverages big‑data representation learning and the high‑fidelity MD targets that matter for leaderboard performance, all while staying inside permissive licenses.
+
+Feel free to register a PoLyInfo account for spot checks, but don’t scrape it—doing so breaks their terms of use.
+
+--
+
+Here is a quote on the use of external data from the rules:
+
+Quoting The Rules For Reference
+6. EXTERNAL DATA AND TOOLS
+
+a. You may use data other than the Competition Data (“External Data”) to develop and test your Submissions. However, you will ensure the External Data is either publicly available and equally accessible to use by all Participants of the Competition for purposes of the competition at no cost to the other Participants, or satisfies the Reasonableness criteria as outlined in Section 2.6.b below. The ability to use External Data under this Section does not limit your other obligations under these Competition Rules, including but not limited to Section 2.8 (Winners Obligations).
+
+b. The use of external data and models is acceptable unless specifically prohibited by the Host. Because of the potential costs or restrictions (e.g., “geo restrictions”) associated with obtaining rights to use external data or certain software and associated tools, their use must be “reasonably accessible to all” and of “minimal cost”. Also, regardless of the cost challenges as they might affect all Participants during the course of the competition, the costs of potentially procuring a license for software used to generate a Submission, must also be considered. The Host will employ an assessment of whether or not the following criteria can exclude the use of the particular LLM, data set(s), or tool(s):
+
+Are Participants being excluded from a competition because of the "excessive" costs for access to certain LLMs, external data, or tools that might be used by other Participants. The Host will assess the excessive cost concern by applying a “Reasonableness” standard (the “Reasonableness Standard”). The Reasonableness Standard will be determined and applied by the Host in light of things like cost thresholds and accessibility.
+
+By way of example only, a small subscription charge to use additional elements of a large language model such as Gemini Advanced are acceptable if meeting the Reasonableness Standard of Sec. 8.2. Purchasing a license to use a proprietary dataset that exceeds the cost of a prize in the competition would not be considered reasonable.
