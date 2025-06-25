@@ -5,8 +5,8 @@ from pathlib import Path
 
 # Check if models exist and their properties
 model_files = [
-    "best_polymer_model.pth",
-    "final_polymer_model.pth"
+    "best_polymer_model.pth"
+    #"final_polymer_model.pth"
 ]
 
 print("=== Model Analysis ===")
@@ -29,11 +29,11 @@ for model_file in model_files:
         
         # Check architecture components
         print("  Model components:")
-        for key in sorted(state_dict.keys())[:10]:  # Show first 10 components
+        for key in sorted(state_dict.keys())[:100]:  # Show first 10 components
             print(f"    - {key}: {state_dict[key].shape}")
-        
-        if len(state_dict.keys()) > 10:
-            print(f"    ... and {len(state_dict.keys()) - 10} more components")
+
+        if len(state_dict.keys()) > 100:
+            print(f"    ... and {len(state_dict.keys()) - 100} more components")
     else:
         print(f"\n{model_file}: Not found")
 
